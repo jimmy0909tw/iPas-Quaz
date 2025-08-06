@@ -1,0 +1,50 @@
+body {
+  font-family: "Microsoft JhengHei", Arial, sans-serif;
+  max-width: 800px;
+  margin: 40px auto;
+  background: #f6f6fb;
+  color: #222;
+}
+h1 {
+  color: #3b5998;
+  text-align: center;
+}
+#quiz-container, #result-container {
+  background: #fff;
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px #aaa2;
+}
+.question {
+  font-weight: bold;
+}
+.options label {
+  display: block;
+  margin: 6px 0;
+  cursor: pointer;
+}
+.button-area {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+.explanation {
+  margin-top: 8px;
+  color: #1a7f37;
+}
+.wrong {
+  color: #d32f2f;
+  font-weight: bold;
+}
+.score {
+  font-size: 1.5rem;
+  color: #3b5998;
+  margin-bottom: 1rem;
+}
+.wrong-list {
+  margin-top: 1rem;
+  border-top: 1px solid #ccc;
+  padding-top: 1rem;
+}
+.wrong-list .question {
+  color: #d32f2f;
+}
