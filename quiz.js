@@ -27,7 +27,7 @@ async function loadQuestions() {
     return questions;
 }
 
-// 洗牌函式，返回洗牌後的選項及新正確答案位置
+// 洗牌函式
 function shuffleOptions(options, answerIndex) {
     const arr = options.map((opt, idx) => ({ opt, idx }));
     for (let i = arr.length - 1; i > 0; i--) {
@@ -42,13 +42,18 @@ function shuffleOptions(options, answerIndex) {
 let quiz = [];
 let userAnswers = [];
 let current = 0;
-let optionOrder = []; // 記錄每題洗牌後的選項與答案
+let optionOrder = []; // 每題洗牌結果
 
 function renderQuestion() {
     const q = quiz[current];
-    // 隨機選項順序 & 正確答案位置
-    const { shuffledOptions, newAnswerIndex } = shuffleOptions(q.options, q.answer);
-    optionOrder[current] = { options: shuffledOptions, answer: newAnswerIndex };
+
+    // 只在第一次產生選項順序
+    if (!optionOrder[current]) {
+        const { shuffledOptions, newAnswerIndex } = shuffleOptions(q.options, q.answer);
+        optionOrder[current] = { options: shuffledOptions, answer: newAnswerIndex };
+    }
+    const shuffledOptions = optionOrder[current].options;
+
     const container = document.getElementById('quiz-container');
     container.innerHTML = `
         <div class="question">(${current + 1}/${quiz.length}) ${q.question}</div>
@@ -83,8 +88,7 @@ function showAnswer(q, ans) {
         ? "✔️ 答對了！<br>" + q.explanation
         : `<span class="wrong">❌ 答錯了！</span><br>正確答案：${String.fromCharCode(65 + shuffled.answer)}<br>${q.explanation}`;
 
-    // 下一題或看成績按鈕
-    const container = document.getElementById('quiz-container');
+    // 下一題/看成績按鈕
     if (current < quiz.length - 1) {
         if (!document.getElementById('next-btn')) {
             let btn = document.createElement('button');
@@ -164,5 +168,6 @@ window.onload = async function() {
     quiz = pickRandom(all, 30); // 依你的題庫數量可調整
     userAnswers = Array(quiz.length);
     current = 0;
+    optionOrder = Array(quiz.length); // 初始化
     renderQuestion();
 };
