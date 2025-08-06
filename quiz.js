@@ -3,7 +3,6 @@ async function loadQuestions() {
     const res = await fetch('questions.csv');
     const text = await res.text();
     const lines = text.trim().split('\n');
-    const header = lines[0].split(',');
     const questions = lines.slice(1).map(line => {
         // 防止題目或選項裡有逗號，用正則分割 CSV
         const cells = [];
@@ -27,7 +26,7 @@ async function loadQuestions() {
     return questions;
 }
 
-// 洗牌函式
+// 洗牌函式，返回洗牌後的選項及新正確答案位置
 function shuffleOptions(options, answerIndex) {
     const arr = options.map((opt, idx) => ({ opt, idx }));
     for (let i = arr.length - 1; i > 0; i--) {
@@ -42,7 +41,7 @@ function shuffleOptions(options, answerIndex) {
 let quiz = [];
 let userAnswers = [];
 let current = 0;
-let optionOrder = []; // 每題洗牌結果
+let optionOrder = []; // 每題洗牌結果，{options: [...], answer: x}
 
 function renderQuestion() {
     const q = quiz[current];
@@ -53,6 +52,7 @@ function renderQuestion() {
         optionOrder[current] = { options: shuffledOptions, answer: newAnswerIndex };
     }
     const shuffledOptions = optionOrder[current].options;
+    const answerIndex = optionOrder[current].answer;
 
     const container = document.getElementById('quiz-container');
     container.innerHTML = `
@@ -86,9 +86,9 @@ function showAnswer(q, ans) {
     exp.style.display = 'block';
     exp.innerHTML = isCorrect
         ? "✔️ 答對了！<br>" + q.explanation
-        : `<span class="wrong">❌ 答錯了！</span><br>正確答案：${String.fromCharCode(65 + shuffled.answer)}<br>${q.explanation}`;
+        : `<span class="wrong">❌ 答錯了！</span><br>正確答案：${String.fromCharCode(65 + shuffled.answer)}. ${shuffled.options[shuffled.answer]}<br>${q.explanation}`;
 
-    // 下一題/看成績按鈕
+    // 下一題或看成績按鈕
     if (current < quiz.length - 1) {
         if (!document.getElementById('next-btn')) {
             let btn = document.createElement('button');
