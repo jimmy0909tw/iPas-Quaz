@@ -27,32 +27,33 @@ async function loadQuestions() {
     return questions;
 }
 
-// 隨機取 n 題
-function pickRandom(arr, n) {
-    const res = [];
-    const used = new Set();
-    while (res.length < n && res.length < arr.length) {
-        const idx = Math.floor(Math.random() * arr.length);
-        if (!used.has(idx)) {
-            res.push(arr[idx]);
-            used.add(idx);
-        }
+// 洗牌函式，返回洗牌後的選項及新正確答案位置
+function shuffleOptions(options, answerIndex) {
+    const arr = options.map((opt, idx) => ({ opt, idx }));
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
     }
-    return res;
+    const shuffledOptions = arr.map(x => x.opt);
+    const newAnswerIndex = arr.findIndex(x => x.idx === answerIndex);
+    return { shuffledOptions, newAnswerIndex };
 }
 
-// 顯示題目
 let quiz = [];
 let userAnswers = [];
 let current = 0;
+let optionOrder = []; // 記錄每題洗牌後的選項與答案
 
 function renderQuestion() {
     const q = quiz[current];
+    // 隨機選項順序 & 正確答案位置
+    const { shuffledOptions, newAnswerIndex } = shuffleOptions(q.options, q.answer);
+    optionOrder[current] = { options: shuffledOptions, answer: newAnswerIndex };
     const container = document.getElementById('quiz-container');
     container.innerHTML = `
         <div class="question">(${current + 1}/${quiz.length}) ${q.question}</div>
         <form id="options-form" class="options">
-            ${q.options.map((opt, i) => `
+            ${shuffledOptions.map((opt, i) => `
                 <label>
                     <input type="radio" name="option" value="${i}" required>
                     ${String.fromCharCode(65 + i)}. ${opt}
@@ -75,13 +76,14 @@ function renderQuestion() {
 
 function showAnswer(q, ans) {
     const exp = document.getElementById('explanation');
-    const isCorrect = ans === q.answer;
+    const shuffled = optionOrder[current];
+    const isCorrect = ans === shuffled.answer;
     exp.style.display = 'block';
     exp.innerHTML = isCorrect
         ? "✔️ 答對了！<br>" + q.explanation
-        : `<span class="wrong">❌ 答錯了！</span><br>正確答案：${String.fromCharCode(65 + q.answer)}<br>${q.explanation}`;
+        : `<span class="wrong">❌ 答錯了！</span><br>正確答案：${String.fromCharCode(65 + shuffled.answer)}<br>${q.explanation}`;
 
-    // 下一題按鈕
+    // 下一題或看成績按鈕
     const container = document.getElementById('quiz-container');
     if (current < quiz.length - 1) {
         if (!document.getElementById('next-btn')) {
@@ -111,8 +113,12 @@ function showResult() {
     let score = 0;
     let wrongList = [];
     for (let i = 0; i < quiz.length; i++) {
-        if (userAnswers[i] === quiz[i].answer) score++;
-        else wrongList.push({q: quiz[i], ans: userAnswers[i]});
+        if (userAnswers[i] === optionOrder[i].answer) score++;
+        else wrongList.push({
+            q: quiz[i],
+            ans: userAnswers[i],
+            order: optionOrder[i]
+        });
     }
     result.style.display = 'block';
     result.innerHTML = `
@@ -124,8 +130,8 @@ function showResult() {
                 ${wrongList.map(w => `
                     <li>
                         <div class="question">${w.q.question}</div>
-                        <div>你的答案：${w.ans !== undefined ? String.fromCharCode(65 + w.ans) + ". " + (w.q.options[w.ans] || "(未選)") : "(未作答)"}</div>
-                        <div>正確答案：${String.fromCharCode(65 + w.q.answer)}. ${w.q.options[w.q.answer]}</div>
+                        <div>你的答案：${w.ans !== undefined ? String.fromCharCode(65 + w.ans) + ". " + (w.order.options[w.ans] || "(未選)") : "(未作答)"}</div>
+                        <div>正確答案：${String.fromCharCode(65 + w.order.answer)}. ${w.order.options[w.order.answer]}</div>
                         <div>說明：${w.q.explanation}</div>
                     </li>
                 `).join('')}
@@ -138,10 +144,24 @@ function showResult() {
     `;
 }
 
+// 隨機取 n 題
+function pickRandom(arr, n) {
+    const res = [];
+    const used = new Set();
+    while (res.length < n && res.length < arr.length) {
+        const idx = Math.floor(Math.random() * arr.length);
+        if (!used.has(idx)) {
+            res.push(arr[idx]);
+            used.add(idx);
+        }
+    }
+    return res;
+}
+
 // 初始化
 window.onload = async function() {
     let all = await loadQuestions();
-    quiz = pickRandom(all, 30); // 你可根據題庫數量調整
+    quiz = pickRandom(all, 30); // 依你的題庫數量可調整
     userAnswers = Array(quiz.length);
     current = 0;
     renderQuestion();
