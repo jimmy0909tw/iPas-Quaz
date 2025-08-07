@@ -1,47 +1,49 @@
-// 讀取 CSV 並解析
+// 讀取多個 CSV 並合併題庫
 async function loadQuestions() {
-    const res = await fetch('questions.csv');
-    const text = await res.text();
-    const lines = text.trim().split('\n');
-    const header = lines[0].split(',');
-    const questions = lines.slice(1).map(line => {
-        // 防止題目或選項裡有逗號，用正則分割 CSV
-        const cells = [];
-        let re = /(".*?"|[^",]+)(?=\s*,|\s*$)/g;
-        let match;
-        while ((match = re.exec(line)) !== null) {
-            let cell = match[1];
-            if (cell.startsWith('"') && cell.endsWith('"')) {
-                cell = cell.slice(1, -1);
-            }
-            cells.push(cell);
-        }
-        return {
-            id: cells[0],
-            question: cells[1],
-            options: [cells[2], cells[3], cells[4], cells[5]],
-            answer: parseInt(cells[6], 10) - 1, // 0-based index
-            explanation: cells[7]
-        };
-    });
-    return questions;
-}
+    // 載入 questions.csv
+    const res1 = await fetch('questions.csv');
+    const text1 = await res1.text();
+    const lines1 = text1.trim().split('\n');
+    const questions1 = lines1.slice(1).map(line => parseCSVLine(line));
 
-// 隨機取 n 題
-function pickRandom(arr, n) {
-    const res = [];
-    const used = new Set();
-    while (res.length < n && res.length < arr.length) {
-        const idx = Math.floor(Math.random() * arr.length);
-        if (!used.has(idx)) {
-            res.push(arr[idx]);
-            used.add(idx);
+    // 載入 questions2.csv（如果有）
+    let questions2 = [];
+    try {
+        const res2 = await fetch('questions2.csv');
+        if (res2.ok) {
+            const text2 = await res2.text();
+            const lines2 = text2.trim().split('\n');
+            questions2 = lines2.slice(1).map(line => parseCSVLine(line));
         }
+    } catch (e) {
+        // 如果沒有 questions2.csv 就忽略
     }
-    return res;
+
+    // 合併所有題目
+    return questions1.concat(questions2);
 }
 
-// 顯示題目
+// 單行 CSV 解析
+function parseCSVLine(line) {
+    const cells = [];
+    let re = /(".*?"|[^",]+)(?=\s*,|\s*$)/g;
+    let match;
+    while ((match = re.exec(line)) !== null) {
+        let cell = match[1];
+        if (cell.startsWith('"') && cell.endsWith('"')) {
+            cell = cell.slice(1, -1);
+        }
+        cells.push(cell);
+    }
+    return {
+        id: cells[0],
+        question: cells[1],
+        options: [cells[2], cells[3], cells[4], cells[5]],
+        answer: parseInt(cells[6], 10) - 1, // 0-based index
+        explanation: cells[7]
+    };
+}
+
 let quiz = [];
 let userAnswers = [];
 let current = 0;
@@ -79,10 +81,9 @@ function showAnswer(q, ans) {
     exp.style.display = 'block';
     exp.innerHTML = isCorrect
         ? "✔️ 答對了！<br>" + q.explanation
-        : `<span class="wrong">❌ 答錯了！</span><br>正確答案：${String.fromCharCode(65 + q.answer)}<br>${q.explanation}`;
+        : `<span class="wrong">❌ 答錯了！</span><br>正確答案：${String.fromCharCode(65 + q.answer)}. ${q.options[q.answer]}<br>${q.explanation}`;
 
-    // 下一題按鈕
-    const container = document.getElementById('quiz-container');
+    // 下一題或看成績按鈕
     if (current < quiz.length - 1) {
         if (!document.getElementById('next-btn')) {
             let btn = document.createElement('button');
@@ -112,7 +113,10 @@ function showResult() {
     let wrongList = [];
     for (let i = 0; i < quiz.length; i++) {
         if (userAnswers[i] === quiz[i].answer) score++;
-        else wrongList.push({q: quiz[i], ans: userAnswers[i]});
+        else wrongList.push({
+            q: quiz[i],
+            ans: userAnswers[i]
+        });
     }
     result.style.display = 'block';
     result.innerHTML = `
@@ -138,10 +142,24 @@ function showResult() {
     `;
 }
 
+// 隨機取 n 題
+function pickRandom(arr, n) {
+    const res = [];
+    const used = new Set();
+    while (res.length < n && res.length < arr.length) {
+        const idx = Math.floor(Math.random() * arr.length);
+        if (!used.has(idx)) {
+            res.push(arr[idx]);
+            used.add(idx);
+        }
+    }
+    return res;
+}
+
 // 初始化
 window.onload = async function() {
     let all = await loadQuestions();
-    quiz = pickRandom(all, 50); // 你可根據題庫數量調整
+    quiz = pickRandom(all, 50); // 隨機選取50題
     userAnswers = Array(quiz.length);
     current = 0;
     renderQuestion();
