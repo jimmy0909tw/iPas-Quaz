@@ -141,7 +141,7 @@ function showResult() {
 // 初始化
 window.onload = async function() {
     let all = await loadQuestions();
-    quiz = pickRandom(all, 30); // 你可根據題庫數量調整
+    quiz = pickRandom(all, 50); // 你可根據題庫數量調整
     userAnswers = Array(quiz.length);
     current = 0;
     renderQuestion();
