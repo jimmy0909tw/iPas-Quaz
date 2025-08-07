@@ -46,6 +46,14 @@ body {
   transition: background 0.18s;
 }
 
+/* 將提交答案和下一題按鈕再放大2倍 */
+#submit-btn,
+#next-btn {
+  font-size: 6em !important;
+  padding: 2.4em 6.4em !important;
+  border-radius: 32px !important;
+}
+
 .button-area button:hover,
 #next-btn:hover,
 #finish-btn:hover {
