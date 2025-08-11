@@ -159,7 +159,7 @@ function pickRandom(arr, n) {
 // 初始化
 window.onload = async function() {
     let all = await loadQuestions();
-    quiz = pickRandom(all, 50); // 隨機選取50題
+    quiz = pickRandom(all, 100); // 隨機選取100題
     userAnswers = Array(quiz.length);
     current = 0;
     renderQuestion();
