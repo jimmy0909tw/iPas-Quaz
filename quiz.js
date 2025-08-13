@@ -1,12 +1,10 @@
 // 讀取多個 CSV 並合併題庫
 async function loadQuestions() {
-    // 載入 questions.csv
     const res1 = await fetch('questions.csv');
     const text1 = await res1.text();
     const lines1 = text1.trim().split('\n');
     const questions1 = lines1.slice(1).map(line => parseCSVLine(line));
 
-    // 載入 questions2.csv（如果有）
     let questions2 = [];
     try {
         const res2 = await fetch('questions2.csv');
@@ -16,10 +14,9 @@ async function loadQuestions() {
             questions2 = lines2.slice(1).map(line => parseCSVLine(line));
         }
     } catch (e) {
-        // 如果沒有 questions2.csv 就忽略
+        // 忽略 missing file
     }
 
-    // 合併所有題目
     return questions1.concat(questions2);
 }
 
@@ -39,7 +36,7 @@ function parseCSVLine(line) {
         id: cells[0],
         question: cells[1],
         options: [cells[2], cells[3], cells[4], cells[5]],
-        answer: parseInt(cells[6], 10) - 1, // 0-based index
+        answer: parseInt(cells[6], 10) - 1,
         explanation: cells[7]
     };
 }
@@ -83,7 +80,6 @@ function showAnswer(q, ans) {
         ? "✔️ 答對了！<br>" + q.explanation
         : `<span class="wrong">❌ 答錯了！</span><br>正確答案：${String.fromCharCode(65 + q.answer)}. ${q.options[q.answer]}<br>${q.explanation}`;
 
-    // 下一題或看成績按鈕
     if (current < quiz.length - 1) {
         if (!document.getElementById('next-btn')) {
             let btn = document.createElement('button');
@@ -137,7 +133,7 @@ function showResult() {
             </div>
         ` : `<div>全部答對，太厲害了！</div>`}
         <div class="button-area">
-            <button onclick="window.location.reload()">再挑戰一次</button>
+            <button onclick="restartQuiz()">再挑戰一次</button>
         </div>
     `;
 }
@@ -156,10 +152,38 @@ function pickRandom(arr, n) {
     return res;
 }
 
+// 再挑戰一次：只挑錯題或未作答題目
+async function restartQuiz() {
+    const all = await loadQuestions();
+
+    const wrongOrUnansweredIds = [];
+    for (let i = 0; i < quiz.length; i++) {
+        if (userAnswers[i] !== quiz[i].answer) {
+            wrongOrUnansweredIds.push(quiz[i].id);
+        }
+    }
+
+    const wrongQuestions = all.filter(q => wrongOrUnansweredIds.includes(q.id));
+
+    if (wrongQuestions.length === 0) {
+        alert("全部答對了！太厲害了！");
+        return;
+    }
+
+    quiz = wrongQuestions;
+    userAnswers = Array(quiz.length);
+    current = 0;
+
+    document.getElementById('quiz-container').style.display = 'block';
+    document.getElementById('result-container').style.display = 'none';
+
+    renderQuestion();
+}
+
 // 初始化
 window.onload = async function() {
     let all = await loadQuestions();
-    quiz = pickRandom(all, 200); // 隨機選取200題
+    quiz = pickRandom(all, 200);
     userAnswers = Array(quiz.length);
     current = 0;
     renderQuestion();
