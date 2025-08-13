@@ -156,6 +156,10 @@ function pickRandom(arr, n) {
 async function restartQuiz() {
     const all = await loadQuestions();
 
+    // 取得第一次測驗中出現過的題目 ID
+    const seenIds = quiz.map(q => q.id);
+
+    // 找出答錯或未作答的題目 ID
     const wrongOrUnansweredIds = [];
     for (let i = 0; i < quiz.length; i++) {
         if (userAnswers[i] !== quiz[i].answer) {
@@ -163,14 +167,21 @@ async function restartQuiz() {
         }
     }
 
+    // 錯題或未作答題目
     const wrongQuestions = all.filter(q => wrongOrUnansweredIds.includes(q.id));
 
-    if (wrongQuestions.length === 0) {
-        alert("全部答對了！太厲害了！");
+    // 找出未出現過的新題目
+    const unseenQuestions = all.filter(q => !seenIds.includes(q.id));
+
+    // 合併錯題與新題目
+    const newQuiz = wrongQuestions.concat(unseenQuestions);
+
+    if (newQuiz.length === 0) {
+        alert("沒有新題目，也全部答對了！太厲害了！");
         return;
     }
 
-    quiz = wrongQuestions;
+    quiz = newQuiz;
     userAnswers = Array(quiz.length);
     current = 0;
 
@@ -183,7 +194,7 @@ async function restartQuiz() {
 // 初始化
 window.onload = async function() {
     let all = await loadQuestions();
-    quiz = pickRandom(all, 200);
+    quiz = pickRandom(all, 100);
     userAnswers = Array(quiz.length);
     current = 0;
     renderQuestion();
